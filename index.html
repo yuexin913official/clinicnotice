@@ -235,6 +235,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .lcard .eInfo{margin-top:12px;font-size:21px}
 .lcard.wide{padding:32px 36px}
 .lcard .bodyLine{font-size:22px;line-height:2}
+/* ===== 統一多筆格狀卡片 ===== */
+.eGrid{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:16px;margin-top:8px}
+.ecard{background:rgba(255,255,255,.72);border:1px solid var(--soft);border-radius:12px;padding:20px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
+.ecard .eDate{font-size:40px;font-weight:800;letter-spacing:.02em;color:var(--pInk);line-height:1.15}
+.ecard .eDate small{font-size:24px;font-weight:700;opacity:.6;margin:0 8px}
+.ecard .chips{display:flex;flex-wrap:wrap;justify-content:center;margin-top:9px}
+.ecard .eInfo{margin-top:11px;font-size:20px;letter-spacing:.02em;color:var(--pInk);opacity:.9;line-height:1.5}
+.ecard .eInfo b{white-space:nowrap;font-weight:800}
+.ecard .bodyLine{font-size:22px;line-height:1.9;color:var(--pInk)}
 /* 自動縮排層級 */
 .c1 .title{font-size:52px}.c1 .eDate{font-size:33px}.c1 .card{padding:26px 34px;margin-top:24px}
 .c1 .hrx{margin:15px 0 18px}.c1 .note{font-size:16.5px}.c1 .chip{font-size:15px}.c1 .eInfo{font-size:16px;margin-top:10px}
@@ -317,8 +326,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <label class="f">標題字體</label>
         <div class="seg segFont" data-key="font">
-          <button type="button" data-v="serif" class="on">明體</button>
           <button type="button" data-v="sans">黑體</button>
+          <button type="button" data-v="serif" class="on">明體</button>
           <button type="button" data-v="kai">楷體</button>
           <button type="button" data-v="yuan">圓體</button>
         </div>
@@ -523,12 +532,15 @@ function entryInner(e){
   return '<div class="eDate">'+dt+'</div>'+chips+info;
 }
 function validEntries(){return state.entries.filter(function(e){return e.start})}
-function buildMain(){
-  var rows=validEntries().map(function(e){return '<div class="ent">'+entryInner(e)+'</div>'}).join('');
-  return rows?'<div class="card">'+rows+'</div>':'';
+function colsFor(n){
+  if(state.orient==='landscape')return n<=1?1:(n<=4?2:3);
+  return n<=3?1:2;
 }
-function entryCards(){
-  return validEntries().map(function(e){return '<div class="lcard">'+entryInner(e)+'</div>'});
+function mainGrid(){
+  var es=validEntries();
+  if(!es.length)return '';
+  var cards=es.map(function(e){return '<div class="ecard">'+entryInner(e)+'</div>'}).join('');
+  return '<div class="eGrid" style="--cols:'+colsFor(es.length)+'">'+cards+'</div>';
 }
 function customInner(){
   return state.customBody.split('\n').map(function(l){return l.trim()}).filter(Boolean)
@@ -593,7 +605,6 @@ function render(){
   p.style.setProperty('--titleFont',(FONTS[state.font]||FONTS.serif).css);
 
   var brand=brandHtml();
-  var cardHtml=state.type==='custom'?buildCustom():buildMain();
   var t2=t;
   var items=[];
   if(state.showContact){
@@ -613,24 +624,14 @@ function render(){
   var deco=decoHtml();
 
   var head='<div class="hrx"><i></i><b></b><i></i></div><div class="title">'+esc(state.title)+'</div>';
-  var fitContent;
-  if(state.orient==='landscape'){
-    var gridHtml='';
-    if(state.type==='custom'){
-      var ci=customInner();
-      if(ci)gridHtml='<div class="lGrid" style="--cols:1"><div class="lcard wide">'+ci+'</div></div>';
-    }else{
-      var cards=entryCards();
-      var n=cards.length;
-      if(n){
-        var cols=n<=1?1:(n===2?2:(n===4?2:3));
-        gridHtml='<div class="lGrid" style="--cols:'+cols+'">'+cards.join('')+'</div>';
-      }
-    }
-    fitContent=head+gridHtml;
+  var mainHtml;
+  if(state.type==='custom'){
+    var ci=customInner();
+    mainHtml=ci?'<div class="eGrid" style="--cols:1"><div class="ecard wide">'+ci+'</div></div>':'';
   }else{
-    fitContent=head+cardHtml;
+    mainHtml=mainGrid();
   }
+  var fitContent=head+mainHtml;
   var html=bgPatSvg()+deco+'<div class="pPad" id="pPad">'+brand+
     '<div class="fitWrap"><div class="fitBox">'+fitContent+'</div></div>'+bottom+'</div>';
   p.innerHTML=html;
@@ -676,8 +677,8 @@ function renderEntries(){
       : '<div class="dates"><input type="date" value="'+esc(e.start)+'" data-k="start"><span>至</span><input type="date" value="'+esc(e.end)+'" data-k="end"></div>';
     div.innerHTML=
       '<div class="segMini">'+
-        '<button type="button" class="'+(e.tag==='closed'?'on':'')+'" data-tag="closed">休診</button>'+
         '<button type="button" class="'+(e.tag==='sub'?'on':'')+'" data-tag="sub">代診</button>'+
+        '<button type="button" class="'+(e.tag==='closed'?'on':'')+'" data-tag="closed">休診</button>'+
       '</div>'+
       datesHtml+
       '<div class="slotRow">'+slotBtns+'</div>'+fields+
