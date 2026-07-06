@@ -47,6 +47,11 @@ html,body{background:var(--parchment);color:var(--ink);font-family:"Noto Sans TC
 .clinicSwitch button.on{background:var(--accent-deep);border-color:var(--accent-deep)}
 .clinicSwitch button.on b,.clinicSwitch button.on i{color:#fff}
 .lead{font-size:12.5px;color:var(--ink-light);letter-spacing:.5px;line-height:1.75;margin:4px 2px 16px;text-align:center}
+.pickHint{display:none}
+body.pickClinic .cols{display:none!important}
+body.pickClinic .pickHint{display:flex;flex-direction:column;align-items:center;gap:12px;margin:34px 6px 70px;padding:70px 20px;border:1px dashed var(--hair2);border-radius:6px;color:var(--ink-light);letter-spacing:2.5px;font-size:14.5px;background:var(--cream)}
+.pickHint .arr{font-size:22px;opacity:.55;letter-spacing:0}
+body.pickClinic #previewBar,body.pickClinic #editBar{display:none!important}
 
 .cols{display:flex;flex-direction:column}
 .colPv{order:-1;margin-bottom:8px}
@@ -168,6 +173,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 #poster[data-orient=landscape]{width:1123px;height:794px}
 /* 有機（悅心） */
 .deco{position:absolute;border-radius:50%;background:var(--tint);pointer-events:none}
+.oBg{position:absolute;pointer-events:none;background-repeat:no-repeat}
 .d1{width:430px;height:430px;top:-200px;right:-170px;opacity:.42}
 .d2{width:330px;height:330px;bottom:-180px;left:-150px;opacity:.3}
 .d3{width:190px;height:190px;top:42%;left:-115px;opacity:.22}
@@ -273,7 +279,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 }
 </style>
 </head>
-<body class="mode-preview">
+<body class="mode-preview pickClinic">
 <div class="app">
   <header class="head">
     <h1>門診公告產生器</h1>
@@ -282,10 +288,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </header>
 
   <div class="clinicSwitch" id="clinicSwitch">
-    <button type="button" data-clinic="yuexin" class="on"><b>悅心診所</b><i>YUEXIN</i></button>
+    <button type="button" data-clinic="yuexin"><b>悅心診所</b><i>YUEXIN</i></button>
     <button type="button" data-clinic="kuo"><b>郭玉柱診所</b><i>DR. KUO</i></button>
   </div>
   <p class="lead">選擇診所、填妥內容，即時預覽 — 一鍵輸出 A4 高解析圖檔，可列印張貼或分享至 LINE、Facebook。</p>
+
+  <div class="pickHint" id="pickHint"><span class="arr">↑</span>請選擇需要公告的診所</div>
 
   <div class="cols">
     <div class="colForm">
@@ -458,7 +466,7 @@ var CLINICS={
 var TITLE_BY_TYPE={main:'門診異動公告',custom:'公告'};
 
 var state={
-  clinic:'yuexin',
+  clinic:'yuexin', chosen:false,
   type:'main', orient:'portrait', font:'serif',
   title:'門診異動公告', customBody:'', note:'',
   entries:[{start:today(),end:'',slots:['上午'],tag:'sub',reason:'醫師休假',subFrom:'',subTo:'',subReason:''}],
@@ -561,12 +569,86 @@ function brandHtml(){
   }
   return h+'</div>';
 }
+function svgU(w,h,body){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">'+body+'</svg>';
+  return 'data:image/svg+xml,'+encodeURIComponent(svg).replace(/\(/g,'%28').replace(/\)/g,'%29').replace(/'/g,'%27');
+}
+function oBg(uri,style){return '<div class="oBg" style="'+style+';background-image:url(\''+uri+'\')"></div>';}
+function mistDiv(P,style){
+  var u=svgU(100,100,'<defs><radialGradient id="m"><stop offset="0" stop-color="'+P.tint+'"/><stop offset="0.7" stop-color="'+P.tint+'" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="50" r="50" fill="url(#m)"/>');
+  return '<div class="oBg" style="'+style+';background-size:100% 100%;background-image:url(\''+u+'\')"></div>';
+}
+function flowerUri(col){
+  /* 盛開五瓣花（線稿） */
+  var petal='<path d="M0 -10 C6 -20 6 -34 0 -40 C-6 -34 -6 -20 0 -10 Z" fill="none" stroke="'+col+'" stroke-width="1.6"/>';
+  var s='';
+  for(var i=0;i<5;i++){s+='<g transform="rotate('+(i*72)+' 50 50) translate(50 50)">'+petal+'</g>';}
+  s+='<circle cx="50" cy="50" r="7" fill="none" stroke="'+col+'" stroke-width="1.6"/><circle cx="50" cy="50" r="2" fill="'+col+'"/>';
+  return svgU(100,100,s);
+}
+function petalUri(col,rot){
+  /* 單片飄落花瓣 */
+  var petal='<path d="M0 0 C-6 -4 -6 -13 0 -17 C6 -13 6 -4 0 0 Z" fill="none" stroke="'+col+'" stroke-width="1.5"/>';
+  return svgU(24,24,'<g transform="translate(12 20) rotate('+rot+')">'+petal+'</g>');
+}
+function wheatUri(col,tf){
+  var grain='<ellipse cx="0" cy="-8" rx="4.5" ry="9" fill="none" stroke="'+col+'" stroke-width="1.5"/>';
+  var s='<path d="M42 156 C43 110 43 60 42 14" fill="none" stroke="'+col+'" stroke-width="1.8"/>';
+  var y=26;for(var i=0;i<6;i++){s+='<g transform="translate(42 '+y+') rotate(-32)">'+grain+'</g><g transform="translate(42 '+y+') rotate(32)">'+grain+'</g>';y+=17;}
+  s+='<path d="M42 14 L42 2" stroke="'+col+'" stroke-width="1.4"/>';
+  return svgU(84,170,tf?'<g transform="'+tf+'">'+s+'</g>':s);
+}
+function waveBody(P,pw,ph){
+  /* 上下兩帶、中央留白：靠邊最濃、往中間漸淡 */
+  var lines='';
+  function band(y0,y1,count,edge){
+    for(var i=0;i<count;i++){
+      var t=count===1?0:i/(count-1);
+      var y=Math.round(y0+(y1-y0)*t);
+      var op=(edge==='top'?(0.5-t*0.38):(0.12+t*0.38)).toFixed(2);
+      lines+='<path d="M-20 '+y+' Q '+Math.round(pw*0.25)+' '+(y-24)+' '+Math.round(pw*0.5)+' '+y+' T '+(pw+20)+' '+y+'" fill="none" stroke="'+P.pri+'" stroke-width="1.8" opacity="'+op+'"/>';
+    }
+  }
+  band(70,Math.round(ph*0.24),4,'top');
+  band(Math.round(ph*0.76),ph-70,4,'bottom');
+  return lines;
+}
+function organicDeco(){
+  var col=state.theme[state.clinic],P=palette(col,'organic');
+  var pw=state.orient==='landscape'?1123:794,ph=state.orient==='landscape'?794:1123;
+  if(col==='#a793ac'){/* 藕紫・暮色柔霧 */
+    return mistDiv(P,'width:600px;height:600px;right:-170px;top:-200px;opacity:0.95')
+      +mistDiv(P,'width:500px;height:500px;left:-180px;bottom:-170px;opacity:0.8')
+      +mistDiv(P,'width:280px;height:280px;left:-130px;top:40%;opacity:0.55')
+      +mistDiv(P,'width:230px;height:230px;right:-70px;bottom:24%;opacity:0.45');
+  }
+  if(col==='#7ab6d8'){/* 天青・平靜水波 */
+    return oBg(svgU(pw,ph,waveBody(P,pw,ph)),'inset:0;background-size:100% 100%;opacity:0.5')
+      +mistDiv(P,'width:460px;height:460px;left:-170px;top:-180px;opacity:0.55');
+  }
+  if(col==='#e28e84'){/* 珊瑚・盛開花與花瓣 */
+    return mistDiv(P,'width:500px;height:500px;right:-180px;top:-200px;opacity:0.65')
+      +oBg(flowerUri(P.pri),'top:34px;right:38px;width:150px;height:150px;background-size:100% 100%;opacity:0.55')
+      +oBg(flowerUri(P.pri),'bottom:80px;left:38px;width:105px;height:105px;background-size:100% 100%;opacity:0.4')
+      +oBg(petalUri(P.pri,40),'top:130px;right:205px;width:26px;height:26px;background-size:100% 100%;opacity:0.5')
+      +oBg(petalUri(P.pri,-25),'top:215px;right:150px;width:22px;height:22px;background-size:100% 100%;opacity:0.4')
+      +oBg(petalUri(P.pri,25),'bottom:132px;left:168px;width:24px;height:24px;background-size:100% 100%;opacity:0.45');
+  }
+  if(col==='#d6cd94'){/* 卡其・麥穗 */
+    return mistDiv(P,'width:500px;height:500px;left:-190px;bottom:-210px;opacity:0.65')
+      +oBg(wheatUri(P.pri,''),'top:26px;right:34px;width:150px;height:185px;background-size:100% 100%;opacity:0.55')
+      +oBg(wheatUri(P.pri,''),'top:44px;right:86px;width:120px;height:150px;background-size:100% 100%;opacity:0.35')
+      +oBg(wheatUri(P.pri,'rotate(180 42 85)'),'bottom:72px;left:34px;width:150px;height:185px;background-size:100% 100%;opacity:0.45');
+  }
+  /* 苔綠・品牌圓塊（LINE 風，維持現況） */
+  return '<div class="deco d1"></div><div class="deco d2"></div><div class="deco d3"></div>';
+}
 function decoHtml(){
   if(CL().style==='classic'){
     return '<div class="cfOuter"></div><div class="cfInner"></div>'+
       '<span class="ck tl"></span><span class="ck tr"></span><span class="ck bl"></span><span class="ck br"></span>';
   }
-  return '<div class="deco d1"></div><div class="deco d2"></div><div class="deco d3"></div><div class="frame"></div><div class="frame2"></div>';
+  return organicDeco()+'<div class="frame"></div><div class="frame2"></div>';
 }
 /* 郭玉柱四靈底紋（四周淡出；用 SVG 遮罩，匯出 PNG/PDF 亦正確） */
 function patternDef(kind,id,color){
@@ -761,10 +843,15 @@ function renderSwatches(){
     : '悅心診所採有機留白設計，柔和文青。';
 }
 function switchClinic(id){
-  if(!CLINICS[id]||id===state.clinic)return;
+  if(!CLINICS[id])return;
+  var first=!state.chosen;
+  if(!first&&id===state.clinic)return; /* 已選的再點一次：不做事（單選、不可取消） */
+  state.chosen=true;
+  document.body.classList.remove('pickClinic');
   state.clinic=id;
   $$('#clinicSwitch button').forEach(function(b){b.classList.toggle('on',b.dataset.clinic===id)});
   applyClinicChrome();fillClinicInfo();renderSwatches();syncLogoUI();saveProfile();render();
+  if(first)setTimeout(scalePreview,60);
 }
 
 /* ---------- 標誌上傳（各院獨立） ---------- */
@@ -946,7 +1033,7 @@ function loadProfile(){
     try{
       if(v){
         var p=JSON.parse(v);
-        if(p.clinic&&CLINICS[p.clinic])state.clinic=p.clinic;
+        /* 診所不還原：每次開啟都須主動選擇，避免用錯診所發公告 */
         if(p.font&&FONTS[p.font])state.font=p.font;
         if(p.orient==='portrait'||p.orient==='landscape')state.orient=p.orient;
         if(p.theme){['yuexin','kuo'].forEach(function(k){if(p.theme[k]&&CLINICS[k].themes.indexOf(p.theme[k])>=0)state.theme[k]=p.theme[k]})}
@@ -961,7 +1048,7 @@ function loadProfile(){
 
 /* ---------- 啟動 ---------- */
 loadProfile().then(function(){
-  $$('#clinicSwitch button').forEach(function(b){b.classList.toggle('on',b.dataset.clinic===state.clinic)});
+  /* 啟動為未選診所狀態（pickClinic），點選後才顯示編輯與預覽 */
   applyClinicChrome();
   initBindings();
   fillClinicInfo();
