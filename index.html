@@ -14,7 +14,7 @@
      Designed by Su Ning | Powered by Claude 2026
      ========================================================== -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@500;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@500;600;700;900&display=swap" rel="stylesheet">
 <style>/* 楷體：全字庫正楷體（emfont，自動子集化；端正公文楷） */@import url("https://font.emtech.cc/css/CNSKai");</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -35,8 +35,8 @@ html,body{background:var(--parchment);color:var(--ink);font-family:"Noto Sans TC
 
 /* ── HEADER ── */
 .head{background:var(--cream);border-bottom:0.5px solid var(--hair);margin:0 -14px;padding:16px 20px 13px;text-align:center}
-.head h1{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:18px;font-weight:600;color:var(--accent-deep);letter-spacing:6px;padding-left:6px;transition:color .3s}
-.headEn{font-size:10.5px;color:var(--ink-light);letter-spacing:2px;margin-top:3px;text-transform:uppercase}
+.head h1{font-family:"Noto Serif TC","Songti TC",serif;font-size:18px;font-weight:500;color:var(--accent-deep);letter-spacing:6px;padding-left:6px;transition:color .3s}
+.headEn{font-size:10.5px;color:var(--accent);font-weight:500;letter-spacing:2px;margin-top:4px;text-transform:uppercase;transition:color .3s}
 .badge{display:inline-block;font-family:"Noto Serif TC",serif;font-size:10px;font-weight:600;font-style:italic;color:#78787f;border:0.5px solid rgba(120,124,134,.55);padding:2px 11px;border-radius:2px;letter-spacing:2px;margin-top:6px}
 
 /* ── 診所切換 ── */
@@ -252,6 +252,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .ecard .chips{display:flex;flex-wrap:wrap;justify-content:center;margin-top:9px}
 .ecard .eInfo{margin-top:11px;font-size:20px;letter-spacing:.02em;color:var(--pInk);opacity:.9;line-height:1.5}
 .ecard .eInfo b{white-space:nowrap;font-weight:800}
+.eInfo.a3{line-height:1.35}
+.a3 .a3main{white-space:nowrap;font-weight:800}
+.a3 .arr{color:var(--pri);font-weight:800;margin:0 .45em}
+.a3 .a3sub{display:block;font-size:.6em;font-weight:400;opacity:.62;letter-spacing:1px;margin-top:.42em;white-space:normal;line-height:1.5}
 .ecard .bodyLine{font-size:22px;line-height:1.9;color:var(--pInk)}
 /* 自動縮排層級 */
 .c1 .title{font-size:52px}.c1 .eDate{font-size:33px}.c1 .card{padding:26px 34px;margin-top:24px}
@@ -535,7 +539,7 @@ function entryInner(e){
   if(e.tag==='sub'){
     if(e.subFrom.trim()&&e.subTo.trim()){
       var rs=(e.subReason.trim()||'請假');
-      info='<div class="eInfo">原 <b>'+esc(e.subFrom.trim())+'</b> 醫師'+esc(rs)+'，由 <b>'+esc(e.subTo.trim())+'</b> 醫師代診</div>';
+      info='<div class="eInfo a3"><span class="a3main"><b>'+esc(e.subFrom.trim())+'</b><span class="arr">→</span><b>'+esc(e.subTo.trim())+'</b></span><span class="a3sub">醫師'+esc(rs)+'・由代診醫師看診</span></div>';
     }
   }else if(e.reason.trim()){
     info='<div class="eInfo">'+esc(e.reason.trim())+'</div>';
