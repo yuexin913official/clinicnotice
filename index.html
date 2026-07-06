@@ -87,6 +87,7 @@ body.pickClinic #previewBar,body.pickClinic #editBar{display:none!important}
 .panel{background:var(--cream);border:0.5px solid var(--hair);border-radius:4px;padding:22px 20px;margin-bottom:14px}
 .panel h2{font-family:"Noto Serif TC","Songti TC",serif;font-size:15px;font-weight:500;color:var(--accent-deep);letter-spacing:4px;margin-bottom:16px;display:flex;align-items:center;gap:10px;transition:color .3s}
 .panel h2::before{content:'';width:2px;height:14px;background:var(--accent);transition:background .3s}
+.panel h2 .h2note{font-family:"Noto Sans TC","PingFang TC",sans-serif;font-size:11px;font-weight:400;letter-spacing:.5px;color:var(--ink-light);margin-left:auto;align-self:center}
 label.f{display:block;font-size:13.5px;color:var(--label);font-weight:500;margin:15px 0 7px;letter-spacing:.3px}
 label.f:first-of-type{margin-top:0}
 input[type=text],input[type=tel],input[type=date],textarea,select{width:100%;font:inherit;font-size:16px;padding:11px 13px;border:0.5px solid var(--hair2);border-radius:2px;background:var(--cream);color:var(--ink);appearance:none;transition:border-color .2s,box-shadow .2s}
@@ -106,6 +107,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .entry .dates{display:flex;align-items:center;gap:8px;margin-top:10px}
 .entry .dates input{flex:1;min-width:0}
 .entry .dates span{font-size:12px;color:var(--ink-light);flex:none}
+.entry .endBox{flex:1;min-width:0;position:relative;display:flex;align-items:center}
+.entry .endBox input{flex:1;min-width:0}
+.entry .dates input.optDate{background:var(--accent-mist);border-color:var(--hair);color:var(--ink-light)}
+.entry .dates input.optDate:focus{color:var(--ink);border-color:var(--accent)}
+.entry .endBox .optHint{position:absolute;top:-8px;left:10px;background:var(--cream);padding:0 5px;font-size:9.5px;font-style:normal;color:var(--ink-light);opacity:.6;letter-spacing:1.5px;pointer-events:none;line-height:1}
 .slotRow{display:flex;flex-wrap:wrap;margin-top:10px}
 .slot{font:inherit;font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:2px;border:0.5px solid var(--hair2);background:var(--cream);color:var(--ink-light);cursor:pointer;margin:0 7px 7px 0;letter-spacing:.5px;transition:all .2s}
 .slot.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -192,10 +198,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .pPad{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;padding:58px 64px;overflow:hidden}
 #poster[data-orient=landscape] .pPad{padding:44px 60px}
 .brand{display:flex;flex-direction:column;align-items:center}
-.logoImg{display:block;height:84px;max-width:520px;object-fit:contain;margin:0 auto 12px}
-.logoImg.only{height:112px;margin-bottom:0}
-#poster[data-orient=landscape] .logoImg{height:64px;margin-bottom:9px}
-#poster[data-orient=landscape] .logoImg.only{height:86px}
+.logoImg{display:block;height:56px;max-width:62%;object-fit:contain;object-position:center;margin:0 auto 10px}
+.logoImg.only{height:84px;margin-bottom:0}
+#poster[data-orient=landscape] .logoImg{height:44px;margin-bottom:8px}
+#poster[data-orient=landscape] .logoImg.only{height:64px}
 .cName{font-size:26px;font-weight:700;letter-spacing:.34em;text-indent:.34em;color:var(--deep)}
 .cEn{font-size:10.5px;letter-spacing:.46em;text-indent:.46em;color:var(--pri);font-weight:500;margin-top:9px;text-transform:uppercase}
 .mid{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
@@ -321,7 +327,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
 
       <div class="panel" id="panelDates">
-        <h2>日期時段</h2>
+        <h2>日期時段<span class="h2note">上限 12 項</span></h2>
         <div id="entList"></div>
         <button type="button" class="addBtn" id="btnAdd">＋ 新增一列日期</button>
         <p class="hint">診次會依日期自動調整：週一至五為上午／下午／夜間，週六為上午／上午（一）／上午（二），週日無門診。休診可跨日並複選診次（選「全日」取消其餘）；代診固定單日、單一診次。</p>
@@ -546,10 +552,10 @@ function entryInner(e){
   }
   return '<div class="eDate">'+dt+'</div>'+chips+info;
 }
-function validEntries(){return state.entries.filter(function(e){return e.start})}
+function validEntries(){return state.entries.filter(function(e){return e.start&&slotOptions(e.tag,e.start).length>0})}
 function colsFor(n){
-  if(state.orient==='landscape')return n<=1?1:(n<=4?2:3);
-  return n<=3?1:2;
+  if(state.orient==='landscape')return n<=1?1:(n<=4?2:(n<=9?3:4));
+  return n<=3?1:(n<=8?2:3);
 }
 function mainGrid(){
   var es=validEntries();
@@ -780,9 +786,11 @@ function renderEntries(){
     var slotBtns=opts.length
       ? opts.map(function(s){return '<button type="button" class="slot'+(e.slots.indexOf(s)>=0?' on':'')+'" data-s="'+esc(s)+'">'+fmtSlot(s)+'</button>'}).join('')
       : '<span class="noClinic">週日無門診</span>';
-    var incomplete=e.tag==='sub'&&(!(e.subFrom||'').trim()||!(e.subTo||'').trim());
+    var noClinicDay=opts.length===0;
+    var incomplete=!noClinicDay&&e.tag==='sub'&&(!(e.subFrom||'').trim()||!(e.subTo||'').trim());
     var subCustom=subIsCustom(e);
-    var fields=e.tag==='sub'
+    var fields=noClinicDay ? ''
+      : e.tag==='sub'
       ? '<div class="rowFields">'
         +'<select data-sel="subFrom"'+((e.subFrom||'')?'':' class="ph"')+'>'+fromOptions(e)+'</select>'
         +'<select data-sel="subTo"'+((e.subTo||subCustom)?'':' class="ph"')+'>'+subOptions(e)+'</select>'
@@ -791,7 +799,7 @@ function renderEntries(){
       : '<div class="rowFields"><input type="text" value="'+esc(e.reason)+'" data-k="reason" placeholder="事由（預設：醫師休假）"></div>';
     var datesHtml=e.tag==='sub'
       ? '<div class="dates single"><input type="date" value="'+esc(e.start)+'" data-k="start"></div>'
-      : '<div class="dates"><input type="date" value="'+esc(e.start)+'" data-k="start"><span>至</span><input type="date" value="'+esc(e.end)+'" data-k="end"></div>';
+      : '<div class="dates"><input type="date" value="'+esc(e.start)+'" data-k="start"><span>至</span><span class="endBox"><input type="date" class="optDate" value="'+esc(e.end)+'" data-k="end"><em class="optHint">選填</em></span></div>';
     div.innerHTML=
       '<div class="segMini">'+
         '<button type="button" class="'+(e.tag==='sub'?'on':'')+'" data-tag="sub">代診</button>'+
