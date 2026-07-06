@@ -63,7 +63,7 @@ body.pickClinic #previewBar,body.pickClinic #editBar{display:none!important}
 @media(max-width:959px){
   body{padding-bottom:82px}
   .lead{display:none}
-  .actions{display:none}
+  .actions,.pvHint{display:none!important}
   body.mode-preview #previewBar{display:flex}
   body.mode-edit #editBar{display:flex}
   .colForm{
@@ -116,6 +116,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .segMini button.on{background:var(--accent-deep);border-color:var(--accent-deep);color:#fff}
 .segFont button{letter-spacing:1px;padding-left:2px;padding-right:2px}
 .rowFields{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.rowFields select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' fill='none' stroke='%238a8c7e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;background-size:11px;padding-right:34px;cursor:pointer}
+.rowFields select.ph{color:var(--ink-light)}
 .rowWarn{margin-top:8px;font-size:11.5px;color:var(--error);letter-spacing:.3px}
 .entry .del{margin-top:10px;font:inherit;font-size:12px;color:var(--error);background:none;border:none;cursor:pointer;padding:0;letter-spacing:.5px}
 .addBtn{width:100%;font:inherit;font-size:13.5px;font-weight:500;padding:10px;border:1px dashed var(--accent);color:var(--accent-deep);background:var(--accent-mist);border-radius:2px;cursor:pointer;letter-spacing:1px;transition:all .25s}
@@ -743,6 +745,29 @@ function scalePreview(){
 }
 
 /* ---------- 日期列表 ---------- */
+/* 醫師名單（固定，如需增修再改此處） */
+var DOCTORS={
+  from:{yuexin:['粟寧','郭玉柱','王伯元'],kuo:['郭玉柱','王麟祥','王伯元']},
+  sub:['郭玉柱','粟寧','王麟祥','王伯元','游曙璟','黃久恩']
+};
+function subIsCustom(e){return !!e.subToCustom||(!!e.subTo&&DOCTORS.sub.indexOf(e.subTo)<0);}
+function fromOptions(e){
+  var list=DOCTORS.from[state.clinic]||[],val=e.subFrom||'',inList=false;
+  var o='<option value="">請選擇原醫師</option>';
+  list.forEach(function(n){o+='<option value="'+esc(n)+'"'+(val===n?' selected':'')+'>'+esc(n)+'</option>';if(val===n)inList=true;});
+  if(val&&!inList)o+='<option value="'+esc(val)+'" selected>'+esc(val)+'</option>';
+  return o;
+}
+function subOptions(e){
+  var exclude=e.subFrom||'',val=e.subTo||'',custom=subIsCustom(e);
+  var o='<option value="">請選擇代醫師</option>';
+  DOCTORS.sub.forEach(function(n){
+    if(n===exclude)return;
+    o+='<option value="'+esc(n)+'"'+((!custom&&val===n)?' selected':'')+'>'+esc(n)+'</option>';
+  });
+  o+='<option value="__custom__"'+(custom?' selected':'')+'>（自行輸入）</option>';
+  return o;
+}
 function renderEntries(){
   var box=$('#entList');box.innerHTML='';
   state.entries.forEach(function(e,i){
@@ -751,9 +776,14 @@ function renderEntries(){
     var slotBtns=opts.length
       ? opts.map(function(s){return '<button type="button" class="slot'+(e.slots.indexOf(s)>=0?' on':'')+'" data-s="'+esc(s)+'">'+fmtSlot(s)+'</button>'}).join('')
       : '<span class="noClinic">週日無門診</span>';
-    var incomplete=e.tag==='sub'&&(!e.subFrom.trim()||!e.subTo.trim());
+    var incomplete=e.tag==='sub'&&(!(e.subFrom||'').trim()||!(e.subTo||'').trim());
+    var subCustom=subIsCustom(e);
     var fields=e.tag==='sub'
-      ? '<div class="rowFields"><input type="text" value="'+esc(e.subFrom)+'" data-k="subFrom" placeholder="原看診醫師姓名"><input type="text" value="'+esc(e.subTo)+'" data-k="subTo" placeholder="代診醫師姓名"><input type="text" value="'+esc(e.subReason)+'" data-k="subReason" placeholder="事由（預設：請假）"></div>'
+      ? '<div class="rowFields">'
+        +'<select data-sel="subFrom"'+((e.subFrom||'')?'':' class="ph"')+'>'+fromOptions(e)+'</select>'
+        +'<select data-sel="subTo"'+((e.subTo||subCustom)?'':' class="ph"')+'>'+subOptions(e)+'</select>'
+        +(subCustom?'<input type="text" value="'+esc(e.subTo)+'" data-k="subToText" placeholder="輸入代診醫師姓名">':'')
+        +'<input type="text" value="'+esc(e.subReason)+'" data-k="subReason" placeholder="事由（預設：請假）"></div>'
       : '<div class="rowFields"><input type="text" value="'+esc(e.reason)+'" data-k="reason" placeholder="事由（預設：醫師休假）"></div>';
     var datesHtml=e.tag==='sub'
       ? '<div class="dates single"><input type="date" value="'+esc(e.start)+'" data-k="start"></div>'
@@ -765,15 +795,15 @@ function renderEntries(){
       '</div>'+
       datesHtml+
       '<div class="slotRow">'+slotBtns+'</div>'+fields+
-      '<div class="rowWarn" style="'+(incomplete?'':'display:none')+'">請填寫原看診醫師與代診醫師姓名</div>'+
+      '<div class="rowWarn" style="'+(incomplete?'':'display:none')+'">請選擇原醫師與代診醫師</div>'+
       (state.entries.length>1?'<button type="button" class="del">移除此列</button>':'');
     div.querySelectorAll('input[data-k]').forEach(function(inp){
       var k=inp.dataset.k;
       inp.addEventListener('input',function(){
-        e[k]=inp.value;
-        if(k==='subFrom'||k==='subTo'){
+        if(k==='subToText')e.subTo=inp.value; else e[k]=inp.value;
+        if(k==='subToText'){
           var wd=div.querySelector('.rowWarn');
-          if(wd)wd.style.display=(e.tag==='sub'&&(!e.subFrom.trim()||!e.subTo.trim()))?'':'none';
+          if(wd)wd.style.display=(e.tag==='sub'&&(!(e.subFrom||'').trim()||!(e.subTo||'').trim()))?'':'none';
         }
         render();
       });
@@ -782,6 +812,19 @@ function renderEntries(){
           e.start=inp.value;reconcileEntry(e);renderEntries();render();
         });
       }
+    });
+    div.querySelectorAll('select[data-sel]').forEach(function(sel){
+      sel.addEventListener('change',function(){
+        var which=sel.dataset.sel,v=sel.value;
+        if(which==='subFrom'){
+          e.subFrom=v;
+          if(e.subTo&&e.subTo===e.subFrom){e.subTo='';e.subToCustom=false;}
+        }else{
+          if(v==='__custom__'){e.subToCustom=true;e.subTo='';}
+          else{e.subToCustom=false;e.subTo=v;}
+        }
+        renderEntries();render();
+      });
     });
     div.querySelectorAll('.slot').forEach(function(b){
       b.addEventListener('click',function(){
@@ -851,7 +894,7 @@ function switchClinic(id){
   document.body.classList.remove('pickClinic');
   state.clinic=id;
   $$('#clinicSwitch button').forEach(function(b){b.classList.toggle('on',b.dataset.clinic===id)});
-  applyClinicChrome();fillClinicInfo();renderSwatches();syncLogoUI();updateSegs();saveProfile();render();
+  applyClinicChrome();fillClinicInfo();renderSwatches();syncLogoUI();updateSegs();renderEntries();saveProfile();render();
   if(first)setTimeout(scalePreview,60);
 }
 
@@ -917,7 +960,9 @@ function initBindings(){
   bindText('#inNote','note');
   $('#btnAdd').addEventListener('click',function(){
     if(state.entries.length>=12){alert('最多 12 列囉，再多海報會太擠、字會很小。若真的很多筆，建議改用「橫式」排版會比較好看。');return}
-    var ne={start:'',end:'',slots:['上午'],tag:'sub',reason:'醫師休假',subFrom:'',subTo:'',subReason:''};
+    var prev=state.entries[state.entries.length-1];
+    var startDate=(prev&&prev.start)?prev.start:today();
+    var ne={start:startDate,end:'',slots:['上午'],tag:'sub',reason:'醫師休假',subFrom:'',subTo:'',subReason:''};
     reconcileEntry(ne);
     state.entries.push(ne);
     renderEntries();render();
