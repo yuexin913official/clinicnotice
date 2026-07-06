@@ -461,7 +461,7 @@ var state={
   clinic:'yuexin',
   type:'main', orient:'portrait', font:'serif',
   title:'門診異動公告', customBody:'', note:'',
-  entries:[{start:today(),end:'',slots:['全日'],tag:'closed',reason:'醫師休假',subFrom:'',subTo:'',subReason:''}],
+  entries:[{start:today(),end:'',slots:['上午'],tag:'sub',reason:'醫師休假',subFrom:'',subTo:'',subReason:''}],
   theme:{yuexin:'#88ab52',kuo:'#5f5a56'},
   logo:{yuexin:'',kuo:''},
   logoOnly:{yuexin:false,kuo:false},
@@ -827,7 +827,9 @@ function initBindings(){
   bindText('#inNote','note');
   $('#btnAdd').addEventListener('click',function(){
     if(state.entries.length>=12){alert('最多 12 列囉，再多海報會太擠、字會很小。若真的很多筆，建議改用「橫式」排版會比較好看。');return}
-    state.entries.push({start:'',end:'',slots:['全日'],tag:'closed',reason:'醫師休假',subFrom:'',subTo:'',subReason:''});
+    var ne={start:'',end:'',slots:['上午'],tag:'sub',reason:'醫師休假',subFrom:'',subTo:'',subReason:''};
+    reconcileEntry(ne);
+    state.entries.push(ne);
     renderEntries();render();
   });
   $('#showContact').addEventListener('change',function(e){
