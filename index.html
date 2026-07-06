@@ -825,7 +825,7 @@ function initBindings(){
   bindText('#inBody','customBody');
   bindText('#inNote','note');
   $('#btnAdd').addEventListener('click',function(){
-    if(state.entries.length>=6){alert('最多 6 列，太多的話海報會塞不下囉。');return}
+    if(state.entries.length>=12){alert('最多 12 列囉，再多海報會太擠、字會很小。若真的很多筆，建議改用「橫式」排版會比較好看。');return}
     state.entries.push({start:'',end:'',slots:['全日'],tag:'closed',reason:'醫師休假',subFrom:'',subTo:'',subReason:''});
     renderEntries();render();
   });
