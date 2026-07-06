@@ -35,7 +35,7 @@ html,body{background:var(--parchment);color:var(--ink);font-family:"Noto Sans TC
 
 /* ── HEADER ── */
 .head{background:var(--cream);border-bottom:0.5px solid var(--hair);margin:0 -14px;padding:16px 20px 13px;text-align:center}
-.head h1{font-family:"Noto Serif TC","Songti TC",serif;font-size:18px;font-weight:500;color:var(--accent-deep);letter-spacing:6px;padding-left:6px;transition:color .3s}
+.head h1{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:18px;font-weight:600;color:var(--accent-deep);letter-spacing:6px;padding-left:6px;transition:color .3s}
 .headEn{font-size:10.5px;color:var(--ink-light);letter-spacing:2px;margin-top:3px;text-transform:uppercase}
 .badge{display:inline-block;font-family:"Noto Serif TC",serif;font-size:10px;font-weight:600;font-style:italic;color:#78787f;border:0.5px solid rgba(120,124,134,.55);padding:2px 11px;border-radius:2px;letter-spacing:2px;margin-top:6px}
 
@@ -43,6 +43,7 @@ html,body{background:var(--parchment);color:var(--ink);font-family:"Noto Sans TC
 .clinicSwitch{display:flex;gap:10px;margin:16px 0 6px}
 .clinicSwitch button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;border:0.5px solid var(--hair2);border-radius:3px;background:var(--cream);cursor:pointer;transition:all .25s}
 .clinicSwitch button b{font-family:"Noto Serif TC","Songti TC",serif;font-size:16px;font-weight:500;letter-spacing:3px;color:var(--ink-mid)}
+.clinicSwitch button[data-clinic="yuexin"] b{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-weight:600}
 .clinicSwitch button i{font-size:9.5px;font-style:normal;letter-spacing:1.5px;color:var(--ink-light);text-transform:uppercase}
 .clinicSwitch button.on{background:var(--accent-deep);border-color:var(--accent-deep)}
 .clinicSwitch button.on b,.clinicSwitch button.on i{color:#fff}
@@ -334,8 +335,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <label class="f">標題字體</label>
         <div class="seg segFont" data-key="font">
-          <button type="button" data-v="sans">黑體</button>
-          <button type="button" data-v="serif" class="on">明體</button>
+          <button type="button" data-v="sans" class="on">黑體</button>
+          <button type="button" data-v="serif">明體</button>
           <button type="button" data-v="kai">楷體</button>
           <button type="button" data-v="yuan">圓體</button>
         </div>
@@ -467,7 +468,7 @@ var TITLE_BY_TYPE={main:'門診異動公告',custom:'公告'};
 
 var state={
   clinic:'yuexin', chosen:false,
-  type:'main', orient:'portrait', font:'serif',
+  type:'main', orient:'portrait', font:{yuexin:'sans',kuo:'serif'},
   title:'門診異動公告', customBody:'', note:'',
   entries:[{start:today(),end:'',slots:['上午'],tag:'sub',reason:'醫師休假',subFrom:'',subTo:'',subReason:''}],
   theme:{yuexin:'#88ab52',kuo:'#5f5a56'},
@@ -684,7 +685,7 @@ function render(){
   p.dataset.orient=state.orient;
   p.className='';
   p.classList.add(CL().style==='classic'?'stClassic':'stOrganic');
-  p.style.setProperty('--titleFont',(FONTS[state.font]||FONTS.serif).css);
+  p.style.setProperty('--titleFont',(FONTS[state.font[state.clinic]]||FONTS.serif).css);
 
   var brand=brandHtml();
   var t2=t;
@@ -850,7 +851,7 @@ function switchClinic(id){
   document.body.classList.remove('pickClinic');
   state.clinic=id;
   $$('#clinicSwitch button').forEach(function(b){b.classList.toggle('on',b.dataset.clinic===id)});
-  applyClinicChrome();fillClinicInfo();renderSwatches();syncLogoUI();saveProfile();render();
+  applyClinicChrome();fillClinicInfo();renderSwatches();syncLogoUI();updateSegs();saveProfile();render();
   if(first)setTimeout(scalePreview,60);
 }
 
@@ -888,7 +889,8 @@ function fileToLogo(file){
 function updateSegs(){
   $$('.seg').forEach(function(seg){
     var key=seg.dataset.key;
-    seg.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',state[key]===b.dataset.v)});
+    var cur=key==='font'?state.font[state.clinic]:state[key];
+    seg.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',cur===b.dataset.v)});
   });
 }
 function updateTypeSections(){
@@ -902,7 +904,8 @@ function initBindings(){
     var key=seg.dataset.key;
     seg.querySelectorAll('button').forEach(function(b){
       b.addEventListener('click',function(){
-        state[key]=b.dataset.v;
+        if(key==='font')state.font[state.clinic]=b.dataset.v;
+        else state[key]=b.dataset.v;
         if(key==='type'){state.title=TITLE_BY_TYPE[state.type];$('#inTitle').value=state.title;updateTypeSections()}
         if(key==='font'||key==='orient')saveProfile();
         updateSegs();render();
@@ -1034,7 +1037,7 @@ function loadProfile(){
       if(v){
         var p=JSON.parse(v);
         /* 診所不還原：每次開啟都須主動選擇，避免用錯診所發公告 */
-        if(p.font&&FONTS[p.font])state.font=p.font;
+        if(p.font&&typeof p.font==='object'){['yuexin','kuo'].forEach(function(k){if(p.font[k]&&FONTS[p.font[k]])state.font[k]=p.font[k]})}
         if(p.orient==='portrait'||p.orient==='landscape')state.orient=p.orient;
         if(p.theme){['yuexin','kuo'].forEach(function(k){if(p.theme[k]&&CLINICS[k].themes.indexOf(p.theme[k])>=0)state.theme[k]=p.theme[k]})}
         if(p.logo){['yuexin','kuo'].forEach(function(k){if(typeof p.logo[k]==='string')state.logo[k]=p.logo[k]})}
