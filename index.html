@@ -727,7 +727,8 @@ function render(){
   var bottom=(noteHtml||footHtml)?'<div class="bottom">'+noteHtml+footHtml+'</div>':'';
   var deco=decoHtml();
 
-  var head='<div class="hrx"><i></i><b></b><i></i></div><div class="title">'+esc(state.title)+'</div>';
+  var head='<div class="title">'+esc(state.title)+'</div>';
+  var hrx='<div class="hrx"><i></i><b></b><i></i></div>';
   var mainHtml;
   if(state.type==='custom'){
     var ci=customInner();
@@ -735,7 +736,7 @@ function render(){
   }else{
     mainHtml=mainGrid();
   }
-  var fitContent=head+mainHtml;
+  var fitContent=head+(mainHtml?hrx+mainHtml:'');
   var html=bgPatSvg()+deco+'<div class="pPad" id="pPad">'+brand+
     '<div class="fitWrap"><div class="fitBox">'+fitContent+'</div></div>'+bottom+'</div>';
   p.innerHTML=html;
