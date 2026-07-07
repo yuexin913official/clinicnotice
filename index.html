@@ -206,7 +206,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .cEn{font-size:10.5px;letter-spacing:.46em;text-indent:.46em;color:var(--pri);font-weight:500;margin-top:9px;text-transform:uppercase}
 .mid{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
 .fitWrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.fitBox{display:flex;flex-direction:column;align-items:center;transform-origin:center}
+.fitBox{display:flex;flex-direction:column;align-items:stretch;width:100%;transform-origin:center}
 .fitBox .hrx{width:360px;margin-left:auto;margin-right:auto}
 .hrx{display:flex;align-items:center;margin:20px 0 26px}
 .hrx i{flex:1;height:1px;background:linear-gradient(90deg,rgba(0,0,0,0),var(--pri));opacity:.5}
@@ -251,12 +251,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .lcard.wide{padding:32px 36px}
 .lcard .bodyLine{font-size:22px;line-height:2}
 /* ===== 統一多筆格狀卡片 ===== */
-.eGrid{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:16px;margin-top:8px}
+.eGrid{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:16px;margin-top:8px;width:100%;max-width:var(--gridMax,100%);margin-left:auto;margin-right:auto}
 .ecard{background:rgba(255,255,255,.72);border:1px solid var(--soft);border-radius:12px;padding:20px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
-.ecard .eDate{font-size:40px;font-weight:800;letter-spacing:.02em;color:var(--pInk);line-height:1.15;white-space:nowrap}
+.ecard .eDate{font-size:var(--dateSize,40px);font-weight:800;letter-spacing:.02em;color:var(--pInk);line-height:1.15}
 .ecard .eDate small{font-size:24px;font-weight:700;opacity:.6;margin:0 8px}
 .ecard .chips{display:flex;flex-wrap:wrap;justify-content:center;margin-top:9px}
-.ecard .eInfo{margin-top:11px;font-size:20px;letter-spacing:.02em;color:var(--pInk);opacity:.9;line-height:1.5}
+.ecard .eInfo{margin-top:11px;font-size:var(--infoSize,20px);letter-spacing:.02em;color:var(--pInk);opacity:.9;line-height:1.5}
+.ecard .chip{font-size:var(--chipSize,19px)}
 .ecard .eInfo b{white-space:nowrap;font-weight:800}
 .eInfo.a3{line-height:1.35}
 .a3 .a3main{white-space:nowrap;font-weight:800}
@@ -557,11 +558,19 @@ function colsFor(n){
   if(state.orient==='landscape')return n<=1?1:(n<=4?2:(n<=9?3:4));
   return n<=3?1:(n<=8?2:3);
 }
+function gridSizes(cols){
+  if(cols>=4)return {d:28,c:14,i:15};
+  if(cols===3)return {d:30,c:15,i:16};
+  if(cols===2)return {d:40,c:18,i:20};
+  return {d:44,c:19,i:22};
+}
 function mainGrid(){
   var es=validEntries();
   if(!es.length)return '';
+  var cols=colsFor(es.length),sz=gridSizes(cols);
+  var gm=cols===1?'70%':'100%';
   var cards=es.map(function(e){return '<div class="ecard">'+entryInner(e)+'</div>'}).join('');
-  return '<div class="eGrid" style="--cols:'+colsFor(es.length)+'">'+cards+'</div>';
+  return '<div class="eGrid" style="--cols:'+cols+';--gridMax:'+gm+';--dateSize:'+sz.d+'px;--chipSize:'+sz.c+'px;--infoSize:'+sz.i+'px">'+cards+'</div>';
 }
 function customInner(){
   return state.customBody.split('\n').map(function(l){return l.trim()}).filter(Boolean)
@@ -722,7 +731,7 @@ function render(){
   var mainHtml;
   if(state.type==='custom'){
     var ci=customInner();
-    mainHtml=ci?'<div class="eGrid" style="--cols:1"><div class="ecard wide">'+ci+'</div></div>':'';
+    mainHtml=ci?'<div class="eGrid" style="--cols:1;--gridMax:78%"><div class="ecard wide">'+ci+'</div></div>':'';
   }else{
     mainHtml=mainGrid();
   }
