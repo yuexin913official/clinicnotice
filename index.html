@@ -264,6 +264,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .a3 .arr{color:var(--pri);font-weight:800;margin:0 .45em}
 .a3 .a3sub{display:block;font-size:.6em;font-weight:400;opacity:.62;letter-spacing:1px;margin-top:.42em;white-space:normal;line-height:1.5}
 .ecard .bodyLine{font-size:22px;line-height:1.9;color:var(--pInk)}
+/* 橫式：卡片壓緊湊，避免高度不足導致整體縮小、卡片變窄 */
+#poster[data-orient=landscape] .eGrid{gap:12px}
+#poster[data-orient=landscape] .ecard{padding:10px 16px}
+#poster[data-orient=landscape] .ecard .chips{margin-top:4px}
+#poster[data-orient=landscape] .ecard .chip{padding:3px 14px}
+#poster[data-orient=landscape] .ecard .eInfo{margin-top:5px;line-height:1.3}
+#poster[data-orient=landscape] .a3 .a3sub{margin-top:.25em}
 /* 自動縮排層級 */
 .c1 .title{font-size:52px}.c1 .eDate{font-size:33px}.c1 .card{padding:26px 34px;margin-top:24px}
 .c1 .hrx{margin:15px 0 18px}.c1 .note{font-size:16.5px}.c1 .chip{font-size:15px}.c1 .eInfo{font-size:16px;margin-top:10px}
@@ -560,10 +567,10 @@ function colsFor(n){
 }
 function gridSizes(cols,orient){
   var land=orient==='landscape';
-  if(cols>=4)return land?{d:36,c:16,i:18}:{d:28,c:14,i:15};
-  if(cols===3)return land?{d:42,c:18,i:20}:{d:30,c:15,i:16};
-  if(cols===2)return land?{d:46,c:19,i:22}:{d:40,c:18,i:20};
-  return land?{d:50,c:20,i:24}:{d:44,c:19,i:22};
+  if(cols>=4)return land?{d:34,c:15,i:17}:{d:28,c:14,i:15};
+  if(cols===3)return land?{d:38,c:16,i:18}:{d:30,c:15,i:16};
+  if(cols===2)return land?{d:44,c:18,i:21}:{d:40,c:18,i:20};
+  return land?{d:48,c:19,i:23}:{d:44,c:19,i:22};
 }
 function mainGrid(){
   var es=validEntries();
