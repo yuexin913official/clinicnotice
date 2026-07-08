@@ -231,7 +231,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .eInfo b{color:var(--pri);font-weight:700;margin:0 2px}
 .bodySep{border-top:1px dashed var(--soft);margin:22px 0 20px}
 .bodyLine{text-align:center;font-size:22px;line-height:2.05;letter-spacing:.06em}
-.note{text-align:center;font-size:18px;line-height:1.9;letter-spacing:.08em;opacity:.82;white-space:pre-wrap;margin-bottom:15px}
+.note{text-align:center;font-size:21px;line-height:1.85;letter-spacing:.08em;opacity:.82;white-space:pre-wrap;margin-bottom:15px}
 .bottom{margin-top:auto;padding-top:20px}
 .fLine{border-top:1px solid var(--soft);padding-top:16px;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;font-size:14.5px;letter-spacing:.04em;opacity:.92}
 .fItem{display:flex;align-items:center;margin:0 13px 4px}
@@ -254,12 +254,21 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .eGrid{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:16px;margin-top:8px}
 .eGrid.capped{max-width:var(--gridMax,70%);margin-left:auto;margin-right:auto}
 .ecard{background:rgba(255,255,255,.72);border:1px solid var(--soft);border-radius:12px;padding:20px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
+.stClassic .ecard{border-radius:2px}
 .ecard .eDate{font-size:var(--dateSize,40px);font-weight:800;letter-spacing:.02em;color:var(--pInk);line-height:1.15}
 .ecard .eDate small{font-size:24px;font-weight:700;opacity:.6;margin:0 8px}
 .ecard .chips{display:flex;flex-wrap:wrap;justify-content:center;margin-top:9px}
 .ecard .eInfo{margin-top:11px;font-size:var(--infoSize,20px);letter-spacing:.02em;color:var(--pInk);opacity:.9;line-height:1.5}
 .ecard .chip{font-size:var(--chipSize,19px)}
 .ecard .eInfo b{white-space:nowrap;font-weight:800}
+/* 停診公告 */
+.tySub{font-size:calc(var(--infoSize,20px) * 1.4);font-weight:600;color:var(--pInk);opacity:.9;text-align:center;margin-top:10px;letter-spacing:.03em;line-height:1.45}
+.tyStatus{margin-top:11px;font-size:var(--infoSize,20px);font-weight:800;letter-spacing:.05em;line-height:1.35}
+.tyStatus.tyStop{color:#c0392b}
+.tyStatus.tyOpen{color:var(--deep)}
+.tyStatus.tyUndef{color:var(--ink-light)}
+.tyStatus .tyNote{display:block;font-size:.58em;font-weight:400;opacity:.85;letter-spacing:1px;margin-top:.4em;white-space:normal;line-height:1.5}
+.entry .tyStatusSel{margin-top:0}
 .eInfo.a3{line-height:1.35}
 .a3 .a3main{white-space:nowrap;font-weight:800}
 .a3 .arr{color:var(--pri);font-weight:800;margin:0 .45em}
@@ -325,6 +334,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <label class="f">公告類型</label>
         <div class="seg" data-key="type">
           <button type="button" data-v="main" class="on">休／代診公告</button>
+          <button type="button" data-v="typhoon">停診公告</button>
           <button type="button" data-v="custom">自訂公告</button>
         </div>
         <label class="f">主標題</label>
@@ -342,8 +352,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <p class="hint">診次會依日期自動調整：週一至五為上午／下午／夜間，週六為上午／上午（一）／上午（二），週日無門診。休診可跨日並複選診次（選「全日」取消其餘）；代診固定單日、單一診次。</p>
       </div>
 
+      <div class="panel" id="panelTyphoon" style="display:none">
+        <h2>停診資訊<span class="h2note">最多 6 張</span></h2>
+        <label class="f">副標說明（可自由編輯，留空則不顯示）</label>
+        <input type="text" id="inTySub" placeholder="留空則不顯示副標"/>
+        <div id="tyList"></div>
+        <button type="button" class="addBtn" id="btnTyAdd">＋ 新增一列</button>
+        <p class="hint">每列為「一個日期＋一個診次＋狀態」。診次依日期自動調整（週六含上午（一）（二）、週日無門診）。狀態選「未定」會自動加註「視風雨狀況另行宣布」。補充說明請填於下方「補充說明」欄。</p>
+      </div>
+
       <div class="panel">
-        <h2>補充說明</h2>
+        <h2>補充說明<span class="h2note">選填・三種公告通用</span></h2>
         <textarea id="inNote" placeholder="選填。例如：造成您的不便，敬請見諒。"></textarea>
       </div>
 
@@ -485,12 +504,14 @@ var CLINICS={
     style:'classic'
   }
 };
-var TITLE_BY_TYPE={main:'門診異動公告',custom:'公告'};
+var TITLE_BY_TYPE={main:'門診異動公告',typhoon:'停診公告',custom:'公告'};
+var TY_STATUS=['停診','正常看診','未定'];
 
 var state={
   clinic:'yuexin', chosen:false,
   type:'main', orient:'portrait', font:{yuexin:'sans',kuo:'serif'},
   title:'門診異動公告', customBody:'', note:'',
+  typhoonSub:'高雄地區受颱風影響期間：', typhoonEntries:[{start:today(),slot:'全日',status:'停診'}],
   entries:[{start:today(),end:'',slots:['上午'],tag:'sub',reason:'醫師休假',subFrom:'',subTo:'',subReason:''}],
   theme:{yuexin:'#88ab52',kuo:'#5f5a56'},
   logo:{yuexin:'',kuo:''},
@@ -580,6 +601,38 @@ function mainGrid(){
   var cls=cols===1?' capped':'';
   var gmStyle=cols===1?';--gridMax:70%':'';
   var cards=es.map(function(e){return '<div class="ecard">'+entryInner(e)+'</div>'}).join('');
+  return '<div class="eGrid'+cls+'" style="--cols:'+cols+gmStyle+';--dateSize:'+sz.d+'px;--chipSize:'+sz.c+'px;--infoSize:'+sz.i+'px">'+cards+'</div>';
+}
+/* ===== 停診公告 ===== */
+function fmtDateMD(s){
+  if(!s)return '';
+  var d=new Date(s+'T00:00:00');
+  if(isNaN(d.getTime()))return '';
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+function reconcileTyphoon(e){
+  var opts=slotOptions('closed',e.start);
+  if(!opts.length)return;
+  if(opts.indexOf(e.slot)<0)e.slot=opts.indexOf('全日')>=0?'全日':opts[0];
+  if(TY_STATUS.indexOf(e.status)<0)e.status='停診';
+}
+function typhoonValid(){return state.typhoonEntries.filter(function(e){return e.start&&slotOptions('closed',e.start).length>0})}
+function typhoonInner(e){
+  var dt='<div class="eDate">'+esc(fmtDate(e.start))+'</div>';
+  var chip='<div class="chips"><span class="chip">'+fmtSlot(e.slot)+'</span></div>';
+  var st;
+  if(e.status==='正常看診')st='<div class="tyStatus tyOpen">正常看診</div>';
+  else if(e.status==='未定')st='<div class="tyStatus tyUndef">未定<span class="tyNote">視風雨狀況另行宣布</span></div>';
+  else st='<div class="tyStatus tyStop">停診</div>';
+  return dt+chip+st;
+}
+function typhoonGrid(){
+  var es=typhoonValid();
+  if(!es.length)return '';
+  var cols=colsFor(es.length),sz=gridSizes(cols,state.orient);
+  var cls=cols===1?' capped':'';
+  var gmStyle=cols===1?';--gridMax:70%':'';
+  var cards=es.map(function(e){return '<div class="ecard">'+typhoonInner(e)+'</div>'}).join('');
   return '<div class="eGrid'+cls+'" style="--cols:'+cols+gmStyle+';--dateSize:'+sz.d+'px;--chipSize:'+sz.c+'px;--infoSize:'+sz.i+'px">'+cards+'</div>';
 }
 function customInner(){
@@ -739,14 +792,20 @@ function render(){
 
   var head='<div class="title">'+esc(state.title)+'</div>';
   var hrx='<div class="hrx"><i></i><b></b><i></i></div>';
-  var mainHtml;
-  if(state.type==='custom'){
+  var fitContent;
+  if(state.type==='typhoon'){
+    var sub=state.typhoonSub.trim()?'<div class="tySub">'+esc(state.typhoonSub.trim())+'</div>':'';
+    var tg=typhoonGrid();
+    var body=sub+(tg||'');
+    fitContent=head+(body?hrx+body:'');
+  }else if(state.type==='custom'){
     var ci=customInner();
-    mainHtml=ci?'<div class="eGrid capped" style="--cols:1;--gridMax:78%"><div class="ecard wide">'+ci+'</div></div>':'';
+    var ch=ci?'<div class="eGrid capped" style="--cols:1;--gridMax:78%"><div class="ecard wide">'+ci+'</div></div>':'';
+    fitContent=head+(ch?hrx+ch:'');
   }else{
-    mainHtml=mainGrid();
+    var mh=mainGrid();
+    fitContent=head+(mh?hrx+mh:'');
   }
-  var fitContent=head+(mainHtml?hrx+mainHtml:'');
   var html=bgPatSvg()+deco+'<div class="pPad" id="pPad">'+brand+
     '<div class="fitWrap"><div class="fitBox">'+fitContent+'</div></div>'+bottom+'</div>';
   p.innerHTML=html;
@@ -797,6 +856,32 @@ function subOptions(e){
   });
   o+='<option value="__custom__"'+(custom?' selected':'')+'>（自行輸入）</option>';
   return o;
+}
+function renderTyphoon(){
+  var box=$('#tyList');if(!box)return;box.innerHTML='';
+  state.typhoonEntries.forEach(function(e,i){
+    var div=document.createElement('div');div.className='entry';
+    var opts=slotOptions('closed',e.start);
+    var noClinic=opts.length===0;
+    var slotBtns=noClinic
+      ? '<span class="noClinic">週日無門診</span>'
+      : opts.map(function(s){return '<button type="button" class="slot'+(e.slot===s?' on':'')+'" data-s="'+esc(s)+'">'+fmtSlot(s)+'</button>'}).join('');
+    var statusHtml=noClinic?''
+      : '<div class="rowFields"><select class="tyStatusSel">'+TY_STATUS.map(function(o){return '<option value="'+o+'"'+(e.status===o?' selected':'')+'>'+o+'</option>'}).join('')+'</select></div>';
+    div.innerHTML='<div class="dates single"><input type="date" value="'+esc(e.start)+'" data-k="start"></div>'
+      +'<div class="slotRow">'+slotBtns+'</div>'
+      +statusHtml
+      +(state.typhoonEntries.length>1?'<button type="button" class="del">移除此列</button>':'');
+    box.appendChild(div);
+    var di=div.querySelector('input[data-k=start]');
+    di.addEventListener('input',function(){e.start=di.value;render()});
+    di.addEventListener('change',function(){e.start=di.value;reconcileTyphoon(e);renderTyphoon();render()});
+    div.querySelectorAll('.slot').forEach(function(b){b.addEventListener('click',function(){e.slot=b.dataset.s;renderTyphoon();render()})});
+    var ss=div.querySelector('.tyStatusSel');
+    if(ss)ss.addEventListener('change',function(){e.status=ss.value;render()});
+    var del=div.querySelector('.del');
+    if(del)del.addEventListener('click',function(){state.typhoonEntries.splice(i,1);renderTyphoon();render()});
+  });
 }
 function renderEntries(){
   var box=$('#entList');box.innerHTML='';
@@ -969,8 +1054,9 @@ function updateSegs(){
   });
 }
 function updateTypeSections(){
+  $('#panelDates').style.display=state.type==='main'?'':'none';
+  $('#panelTyphoon').style.display=state.type==='typhoon'?'':'none';
   $('#secCustom').style.display=state.type==='custom'?'':'none';
-  $('#panelDates').style.display=state.type==='custom'?'none':'';
 }
 function bindText(sel,key){var el=$(sel);el.addEventListener('input',function(){state[key]=el.value;render()})}
 function initBindings(){
@@ -990,6 +1076,13 @@ function initBindings(){
   bindText('#inTitle','title');
   bindText('#inBody','customBody');
   bindText('#inNote','note');
+  bindText('#inTySub','typhoonSub');
+  $('#btnTyAdd').addEventListener('click',function(){
+    if(state.typhoonEntries.length>=6){alert('停診公告最多 6 張囉。');return}
+    var prev=state.typhoonEntries[state.typhoonEntries.length-1];
+    var ne={start:(prev&&prev.start)?prev.start:today(),slot:'全日',status:'停診'};
+    reconcileTyphoon(ne);state.typhoonEntries.push(ne);renderTyphoon();render();
+  });
   $('#btnAdd').addEventListener('click',function(){
     if(state.entries.length>=12){alert('最多 12 列囉，再多海報會太擠、字會很小。若真的很多筆，建議改用「橫式」排版會比較好看。');return}
     var prev=state.entries[state.entries.length-1];
@@ -1019,6 +1112,7 @@ function syncForm(){
   $('#inTitle').value=state.title;
   $('#inBody').value=state.customBody;
   $('#inNote').value=state.note;
+  $('#inTySub').value=state.typhoonSub;
   $('#showContact').checked=state.showContact;
   updateSegs();updateTypeSections();
 }
@@ -1137,6 +1231,8 @@ loadProfile().then(function(){
   syncForm();
   state.entries.forEach(reconcileEntry);
   renderEntries();
+  state.typhoonEntries.forEach(reconcileTyphoon);
+  renderTyphoon();
   render();
   setTimeout(scalePreview,60);
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){render()});
