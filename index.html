@@ -589,10 +589,10 @@ function colsFor(n){
 }
 function gridSizes(cols,orient){
   var land=orient==='landscape';
-  if(cols>=4)return land?{d:34,c:15,i:17}:{d:28,c:14,i:15};
-  if(cols===3)return land?{d:38,c:16,i:18}:{d:30,c:15,i:16};
-  if(cols===2)return land?{d:44,c:18,i:21}:{d:40,c:18,i:20};
-  return land?{d:48,c:19,i:23}:{d:44,c:19,i:22};
+  if(cols>=4)return land?{d:34,c:19,i:22}:{d:28,c:18,i:19};
+  if(cols===3)return land?{d:38,c:21,i:23}:{d:30,c:19,i:21};
+  if(cols===2)return land?{d:44,c:24,i:27}:{d:40,c:24,i:26};
+  return land?{d:48,c:25,i:29}:{d:44,c:25,i:28};
 }
 function mainGrid(){
   var es=validEntries();
